@@ -45,13 +45,14 @@ public class TxItem {
     private boolean isValid;
     private int txSize;
     public TxMetaData metaData;
+    private boolean isReplacedByFee;
 
     private TxItem() {
     }
 
     public TxItem(long timeStamp, int blockHeight, byte[] hash, String txReversed, long sent,
                   long received, long fee, String to[], String from[],
-                  long balanceAfterTx, int txSize, long[] outAmounts, boolean isValid) {
+                  long balanceAfterTx, int txSize, long[] outAmounts, boolean isValid, boolean isReplacedByFee) {
         this.timeStamp = timeStamp;
         this.blockHeight = blockHeight;
         this.txReversed = txReversed;
@@ -65,6 +66,7 @@ public class TxItem {
         this.outAmounts = outAmounts;
         this.isValid = isValid;
         this.txSize = txSize;
+        this.isReplacedByFee = isReplacedByFee;
     }
 
     public int getBlockHeight() {
@@ -121,6 +123,10 @@ public class TxItem {
 
     public boolean isValid() {
         return isValid;
+    }
+
+    public boolean isReplacedByFee() {
+        return isReplacedByFee;
     }
 
 }

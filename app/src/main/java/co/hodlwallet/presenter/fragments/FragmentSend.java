@@ -926,6 +926,9 @@ public class FragmentSend extends Fragment {
             @Override
             public void onClick(View v) {
                 String str = input.getText().toString();
+                if (str.isEmpty()) {
+                    str = "0";
+                }
                 long fee = Long.parseLong(str) * BRConstants.BYTE_SHIFT;
                 if (fee < BRConstants.FEE_LIMIT) {
                     BRWalletManager.getInstance().setFeePerKb(fee, false);

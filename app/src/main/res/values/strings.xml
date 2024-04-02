@@ -620,6 +620,8 @@
   <string name="Transaction.fee">(%1$s fee)</string>
   <!-- Invalid transaction -->
   <string name="Transaction.invalid">INVALID</string>
+  <!-- Replace By Fee transaction -->
+  <string name="Transaction.replacedByFee">REPLACED BY FEE</string>
   <!-- Timestamp label for event that just happened -->
   <string name="Transaction.justNow">just now</string>
   <!-- Receive status text: 'In progress: 20%' -->
@@ -666,6 +668,12 @@
   <string name="TransactionDetails.to">to %1$s</string>
   <!-- Transaction ID header -->
   <string name="TransactionDetails.txHashHeader">Bitcoin Transaction ID</string>
+  <!-- Replace By Fee -->
+  <string name="TransactionDetails.replaceByFee">Replace By Fee</string>
+  <!-- Transaction confirmed -->
+  <string name="TransactionDetails.replaceByFeeNotAvailable">Transaction Confirmed</string>
+  <!-- Replace By Fee available -->
+  <string name="TransactionDetails.replaceByFeeAvailable">Click To Replace By Fee</string>
   <!-- (this transaction was) Received at this address: -->
   <string name="TransactionDirection.address">Received at this Address</string>
   <!-- (this transaction was) Sent to this address: -->

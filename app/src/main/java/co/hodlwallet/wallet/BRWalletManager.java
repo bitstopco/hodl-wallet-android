@@ -632,6 +632,8 @@ public class BRWalletManager {
 
     public native int feeForTransaction(String addressHolder, long amountHolder);
 
+    public native int feeForTransactionReplaceByFee(String addressHolder, long amountHolder, byte[] txHash);
+
     public native int feeForTransactionAmount(long amountHolder);
 
     public native long getMinOutputAmount();
@@ -641,6 +643,8 @@ public class BRWalletManager {
     public native boolean isCreated();
 
     public native byte[] tryTransaction(String addressHolder, long amountHolder);
+
+    public native byte[] tryTransactionReplaceByFee(String addressHolder, long amountHolder, byte[] txHash);
 
     // returns the given amount (amount is in satoshis) in local currency units (i.e. pennies, pence)
     // price is local currency units per bitcoin

@@ -204,6 +204,7 @@ public class BRApiManager {
 
     public static void updateFeePerKb(Context app) {
         String jsonString = urlGET(app, "https://" + HodlApp.HOST + "/hodl/fee-estimator.json");
+        String jsonBitcoiner = urlGET(app, "https://bitcoiner.live/api/fees/estimates/latest");
         if (jsonString == null || jsonString.isEmpty()) {
             Log.e(TAG, "updateFeePerKb: failed to update fee, response string: " + jsonString);
             return;
@@ -217,7 +218,16 @@ public class BRApiManager {
         try {
             JSONObject obj = new JSONObject(jsonString);
             highFee = obj.getLong("fastest_sat_per_kilobyte");
-            fee = obj.getLong("normal_sat_per_kilobyte");
+            if (jsonBitcoiner == null || jsonBitcoiner.isEmpty()) {
+                fee = obj.getLong("normal_sat_per_kilobyte");
+            } else {
+                // Get Bitcoiner data
+                JSONObject objBitcoiner = new JSONObject(jsonBitcoiner);
+                JSONObject objEstimates = objBitcoiner.getJSONObject("estimates");
+                JSONObject obj30 = objEstimates.getJSONObject("30");
+                double priority = obj30.getDouble("sat_per_vbyte");
+                fee = (long) priority * 1000;
+            }
             economyFee = obj.getLong("slow_sat_per_kilobyte");
             highFeeTime = obj.getString("fastest_time_text");
             regularFeeTime = obj.getString("normal_time_text");
