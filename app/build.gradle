@@ -120,10 +120,6 @@ android {
             java.srcDirs = ['src/main/java', 'src/main/jni/breadwallet-core/Java']
         }
     }
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
 }
 
 task copyResDirectoryToClasses(type: Copy) {
