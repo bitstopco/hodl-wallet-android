@@ -416,14 +416,6 @@ public class BRSender {
             @Override
             public void run() {
                 byte[] tmpTx = m.tryTransactionReplaceByFee(paymentRequest.addresses[0], paymentRequest.amount, txHash);
-                String hex = "";
-
-                // Iterating through each byte in the array
-                for (byte i : tmpTx) {
-                    hex += String.format("%02X", i);
-                }
-                // Log.e(TAG, "ReplaceByFeeTransaction: " + new String(tmpTx, StandardCharsets.UTF_8));
-                Log.e(TAG, "NewReplaceByFeeTransaction: " + hex);
                 if (tmpTx == null) {
                     //something went wrong, failed to create tx
                     ((Activity) app).runOnUiThread(new Runnable() {
