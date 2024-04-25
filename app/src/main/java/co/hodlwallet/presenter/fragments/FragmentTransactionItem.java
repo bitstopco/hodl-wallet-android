@@ -156,7 +156,8 @@ public class FragmentTransactionItem extends Fragment {
             @Override
             public void onClick(View v) {
                 int level = getLevel(item);
-                if (level <= 3) {
+                boolean sent = item.getReceived() - item.getSent() < 0;
+                if (level <= 3 && sent && !item.isReplacedByFee()) {
                     Activity app = getActivity();
                     String addr = item.getTo()[0];
                     String comment = "Replace by fee";
@@ -225,17 +226,23 @@ public class FragmentTransactionItem extends Fragment {
         switch (level) {
             case 0:
                 percentage = getString(R.string.Transaction_awaitingStatus);
-                if (sent)
+                if (item.isReplacedByFee())
+                    mReplaceByFee.setText(getString(R.string.Transaction_replacedByFee));
+                else if (sent)
                     mReplaceByFee.setText(getString(R.string.TransactionDetails_replaceByFeeAvailable));
                 break;
             case 1:
                 percentage = getString(R.string.Transaction_awaitingStatus);
-                if (sent)
+                if (item.isReplacedByFee())
+                    mReplaceByFee.setText(getString(R.string.Transaction_replacedByFee));
+                else if (sent)
                     mReplaceByFee.setText(getString(R.string.TransactionDetails_replaceByFeeAvailable));
                 break;
             case 2:
                 percentage = getString(R.string.Transaction_awaitingStatus);
-                if (sent)
+                if (item.isReplacedByFee())
+                    mReplaceByFee.setText(getString(R.string.Transaction_replacedByFee));
+                else if (sent)
                     mReplaceByFee.setText(getString(R.string.TransactionDetails_replaceByFeeAvailable));
                 break;
             case 3:
