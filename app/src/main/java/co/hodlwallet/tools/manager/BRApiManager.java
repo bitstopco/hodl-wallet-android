@@ -204,9 +204,9 @@ public class BRApiManager {
 
     public static void updateFeePerKb(Context app) {
         String jsonString = urlGET(app, "https://" + HodlApp.HOST + "/hodl/fee-estimator.json");
-        String jsonBitcoiner = urlGET(app, "https://bitcoiner.live/api/fees/estimates/latest");
-        if (jsonString == null || jsonString.isEmpty()) {
-            Log.e(TAG, "updateFeePerKb: failed to update fee, response string: " + jsonString);
+        String jsonRecommended = urlGET(app, "https://api.hodlwallet.com/mempool/recommended_fees");
+        if ((jsonString == null || jsonString.isEmpty()) && (jsonRecommended == null || jsonRecommended.isEmpty())) {
+            Log.e(TAG, "updateFeePerKb: failed to update fee, response string: " + jsonRecommended);
             return;
         }
         long highFee;
@@ -217,26 +217,22 @@ public class BRApiManager {
         String economyFeeTime;
         try {
             JSONObject obj = new JSONObject(jsonString);
-            if (jsonBitcoiner == null || jsonBitcoiner.isEmpty()) {
+            if (jsonRecommended == null || jsonRecommended.isEmpty()) {
                 highFee = obj.getLong("fastest_sat_per_kilobyte");
                 fee = obj.getLong("normal_sat_per_kilobyte");
                 economyFee = obj.getLong("slow_sat_per_kilobyte");
             } else {
-                // Get Bitcoiner data
-                JSONObject objBitcoiner = new JSONObject(jsonBitcoiner);
-                JSONObject objEstimates = objBitcoiner.getJSONObject("estimates");
+                // Get Recommended data
+                JSONObject objRecommended = new JSONObject(jsonRecommended);
 
-                JSONObject estimates30 = objEstimates.getJSONObject("30");
-                double fee30SatPerVbyte = estimates30.getDouble("sat_per_vbyte");
-                highFee = (long) fee30SatPerVbyte * 1000;
+                long fastestFeeSatPerVbyte = objRecommended.getLong("fastestFee");
+                highFee = fastestFeeSatPerVbyte * 1000;
 
-                JSONObject estimates60 = objEstimates.getJSONObject("60");
-                double fee60SatPerVbyte = estimates60.getDouble("sat_per_vbyte");
-                fee = (long) fee60SatPerVbyte * 1000;
+                long halfHourFeeSatPerVbyte = objRecommended.getLong("halfHourFee");
+                fee = halfHourFeeSatPerVbyte * 1000;
 
-                JSONObject estimates180 = objEstimates.getJSONObject("180");
-                double fee180SatPerVbyte = estimates180.getDouble("sat_per_vbyte");
-                economyFee = (long) fee180SatPerVbyte * 1000;
+                long hourFeeSatPerVbyte = objRecommended.getLong("hourFee");
+                economyFee = hourFeeSatPerVbyte * 1000;
             }
             highFeeTime = obj.getString("fastest_time_text");
             regularFeeTime = obj.getString("normal_time_text");
