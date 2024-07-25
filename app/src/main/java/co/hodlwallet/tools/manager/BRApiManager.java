@@ -204,8 +204,9 @@ public class BRApiManager {
 
     public static void updateFeePerKb(Context app) {
         String jsonString = urlGET(app, "https://" + HodlApp.HOST + "/hodl/fee-estimator.json");
-        if (jsonString == null || jsonString.isEmpty()) {
-            Log.e(TAG, "updateFeePerKb: failed to update fee, response string: " + jsonString);
+        String jsonRecommended = urlGET(app, "https://api.hodlwallet.com/mempool/recommended_fees");
+        if ((jsonString == null || jsonString.isEmpty()) && (jsonRecommended == null || jsonRecommended.isEmpty())) {
+            Log.e(TAG, "updateFeePerKb: failed to update fee, response string: " + jsonRecommended);
             return;
         }
         long highFee;
@@ -216,9 +217,23 @@ public class BRApiManager {
         String economyFeeTime;
         try {
             JSONObject obj = new JSONObject(jsonString);
-            highFee = obj.getLong("fastest_sat_per_kilobyte");
-            fee = obj.getLong("normal_sat_per_kilobyte");
-            economyFee = obj.getLong("slow_sat_per_kilobyte");
+            if (jsonRecommended == null || jsonRecommended.isEmpty()) {
+                highFee = obj.getLong("fastest_sat_per_kilobyte");
+                fee = obj.getLong("normal_sat_per_kilobyte");
+                economyFee = obj.getLong("slow_sat_per_kilobyte");
+            } else {
+                // Get Recommended data
+                JSONObject objRecommended = new JSONObject(jsonRecommended);
+
+                long fastestFeeSatPerVbyte = objRecommended.getLong("fastestFee");
+                highFee = fastestFeeSatPerVbyte * 1000;
+
+                long halfHourFeeSatPerVbyte = objRecommended.getLong("halfHourFee");
+                fee = halfHourFeeSatPerVbyte * 1000;
+
+                long hourFeeSatPerVbyte = objRecommended.getLong("hourFee");
+                economyFee = hourFeeSatPerVbyte * 1000;
+            }
             highFeeTime = obj.getString("fastest_time_text");
             regularFeeTime = obj.getString("normal_time_text");
             economyFeeTime = obj.getString("slow_time_text");

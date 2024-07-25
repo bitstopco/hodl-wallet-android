@@ -375,7 +375,7 @@ JNIEXPORT jobjectArray JNICALL Java_co_hodlwallet_wallet_BRWalletManager_getTran
     jobjectArray txObjects = (*env)->NewObjectArray(env, (jsize) txCount, txClass, 0);
     jobjectArray globalTxs = (*env)->NewGlobalRef(env, txObjects);
     jmethodID txObjMid = (*env)->GetMethodID(env, txClass, "<init>",
-                         "(JI[BLjava/lang/String;JJJ[Ljava/lang/String;[Ljava/lang/String;JI[JZ)V");
+                         "(JI[BLjava/lang/String;JJJ[Ljava/lang/String;[Ljava/lang/String;JI[JZZ)V");
     jclass stringClass = (*env)->FindClass(env, "java/lang/String");
 
     for (int i = 0; i < txCount; i++) {
@@ -383,6 +383,8 @@ JNIEXPORT jobjectArray JNICALL Java_co_hodlwallet_wallet_BRWalletManager_getTran
         BRTransaction *tempTx = transactions_sqlite[i];
         jboolean isValid = (jboolean) ((BRWalletTransactionIsValid(_wallet, tempTx) == 1) ? JNI_TRUE
                                        : JNI_FALSE);
+        jboolean isReplacedByFee = (jboolean) ((BRWalletTransactionIsReplacedByFee(_wallet, tempTx) == 1) ? JNI_TRUE
+                                                                                                          : JNI_FALSE);
         jlong JtimeStamp = tempTx->timestamp;
         jint JblockHeight = tempTx->blockHeight;
         jint JtxSize = (jint) BRTransactionSize(tempTx);
@@ -449,7 +451,7 @@ JNIEXPORT jobjectArray JNICALL Java_co_hodlwallet_wallet_BRWalletManager_getTran
                                              JtxHash, txReversed, Jsent,
                                              Jreceived, Jfee, JtoAddresses, JfromAddresses,
                                              JbalanceAfterTx, JtxSize,
-                                             JoutAmounts, isValid);
+                                             JoutAmounts, isValid, isReplacedByFee);
 
         (*env)->SetObjectArrayElement(env, globalTxs, (jsize) (txCount - 1 - i), txObject);
         (*env)->DeleteLocalRef(env, txObject);
@@ -543,6 +545,23 @@ Java_co_hodlwallet_wallet_BRWalletManager_feeForTransaction(JNIEnv *env, jobject
     return (jint) BRWalletFeeForTx(_wallet, tx);
 }
 
+JNIEXPORT jint JNICALL
+Java_co_hodlwallet_wallet_BRWalletManager_feeForTransactionReplaceByFee(JNIEnv *env, jobject obj,
+                                                                        jstring address, jlong amount, jbyteArray hash) {
+    __android_log_print(ANDROID_LOG_DEBUG, "Message from C: ", "feeForTransactionReplaceByFee");
+    if (!_wallet) return 0;
+
+    jbyte *byteTx = (*env)->GetByteArrayElements(env, hash, 0);
+    UInt256 txHash = (*(UInt256 *) byteTx);
+    BRTransaction *txOriginal = BRWalletTransactionForHash(_wallet, txHash);
+
+    const char *rawAddress = (*env)->GetStringUTFChars(env, address, NULL);
+    if(amount <= 0) return 0;
+    BRTransaction *tx = BRWalletCreateTransactionReplaceByFee(_wallet, (uint64_t) amount, rawAddress, txOriginal);
+    if (!tx) return 0;
+    return (jint) BRWalletFeeForTx(_wallet, tx);
+}
+
 JNIEXPORT jlong JNICALL
 Java_co_hodlwallet_wallet_BRWalletManager_feeForTransactionAmount(JNIEnv *env, jobject obj,
         jlong amount) {
@@ -562,6 +581,35 @@ Java_co_hodlwallet_wallet_BRWalletManager_tryTransaction(JNIEnv *env, jobject ob
     BRTransaction *tx = BRWalletCreateTransaction(_wallet, (uint64_t) jAmount, rawAddress);
 
     if (!tx) return NULL;
+
+    size_t len = BRTransactionSerialize(tx, NULL, 0);
+    uint8_t *buf = malloc(len);
+
+    len = BRTransactionSerialize(tx, buf, len);
+
+    jbyteArray result = (*env)->NewByteArray(env, (jsize) len);
+
+    (*env)->SetByteArrayRegion(env, result, 0, (jsize) len, (jbyte *) buf);
+    free(buf);
+    return result;
+}
+
+JNIEXPORT jbyteArray JNICALL
+Java_co_hodlwallet_wallet_BRWalletManager_tryTransactionReplaceByFee(JNIEnv *env, jobject obj,
+                                                                     jstring jAddress, jlong jAmount, jbyteArray hash) {
+    __android_log_print(ANDROID_LOG_DEBUG, "Message from C: ", "tryTransactionReplaceByFee");
+    if (!_wallet) return 0;
+
+    jbyte *byteTx = (*env)->GetByteArrayElements(env, hash, 0);
+    UInt256 txHash = (*(UInt256 *) byteTx);
+    BRTransaction *txOriginal = BRWalletTransactionForHash(_wallet, txHash);
+
+    const char *rawAddress = (*env)->GetStringUTFChars(env, jAddress, NULL);
+    BRTransaction *tx = BRWalletCreateTransactionReplaceByFee(_wallet, (uint64_t) jAmount, rawAddress, txOriginal);
+
+    if (!tx) return NULL;
+
+    // edit tx for replace-by-fee requirements
 
     size_t len = BRTransactionSerialize(tx, NULL, 0);
     uint8_t *buf = malloc(len);

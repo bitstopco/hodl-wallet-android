@@ -120,6 +120,7 @@ public class TransactionListAdapter extends RecyclerView.Adapter<RecyclerView.Vi
         if (backUpFeed == null) backUpFeed = new ArrayList<>();
 //        if (mds == null) mds = new HashMap<>();
 //        boolean updateMetadata = items.size() != 0 && backUpFeed.size() != items.size() && BRSharedPrefs.getAllowSpend(mContext);
+        // items = itemsRemoveReplaceByFeeTxns(items);
         this.itemFeed = items;
         this.backUpFeed = items;
         updateTxHashes();
@@ -165,6 +166,16 @@ public class TransactionListAdapter extends RecyclerView.Adapter<RecyclerView.Vi
 //                updatingReverseTxHash = false;
 //            }
 //        });
+    }
+
+    private List<TxItem> itemsRemoveReplaceByFeeTxns(List<TxItem> items) {
+        List<TxItem> newItems = new ArrayList<>();
+        for (TxItem item : items) {
+            if (!item.isReplacedByFee()) {
+                newItems.add(item);
+            }
+        }
+        return newItems;
     }
 
     //update metadata ONLY when the feed is different than the new one
@@ -333,7 +344,9 @@ public class TransactionListAdapter extends RecyclerView.Adapter<RecyclerView.Vi
             convertView.status.setText(String.format("%s - %s", sentReceived, percentage));
         }
 
-        if (!item.isValid())
+        if (item.isReplacedByFee()) {
+            convertView.status.setText(mContext.getString(R.string.Transaction_replacedByFee));
+        } else if (!item.isValid())
             convertView.status.setText(mContext.getString(R.string.Transaction_invalid));
 
         long satoshisAmount = received ? item.getReceived() : (item.getSent() - item.getReceived());

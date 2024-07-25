@@ -24,11 +24,14 @@ import android.widget.TextView;
 import co.hodlwallet.HodlApp;
 import co.hodlwallet.R;
 import co.hodlwallet.presenter.activities.settings.WebViewActivity;
+import co.hodlwallet.presenter.entities.PaymentItem;
 import co.hodlwallet.presenter.entities.TxItem;
 import co.hodlwallet.tools.animation.BRAnimator;
 import co.hodlwallet.tools.animation.SlideDetector;
+import co.hodlwallet.tools.manager.BRClipboardManager;
 import co.hodlwallet.tools.manager.BRSharedPrefs;
 import co.hodlwallet.tools.manager.TxManager;
+import co.hodlwallet.tools.security.BRSender;
 import co.hodlwallet.tools.threads.BRExecutor;
 import co.hodlwallet.tools.util.BRConstants;
 import co.hodlwallet.tools.util.BRCurrency;
@@ -40,6 +43,7 @@ import co.platform.tools.KVStoreManager;
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Locale;
 
@@ -88,6 +92,7 @@ public class FragmentTransactionItem extends Fragment {
     private LinearLayout signalLayout;
     private ImageButton close;
     private String oldComment;
+    private TextView mReplaceByFee;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -108,6 +113,7 @@ public class FragmentTransactionItem extends Fragment {
         mAvailableSpend = (TextView) rootView.findViewById(R.id.available_spend);
         mTxHash = (TextView) rootView.findViewById(R.id.tx_hash);
         close = (ImageButton) rootView.findViewById(R.id.close_button);
+        mReplaceByFee = (TextView) rootView.findViewById(R.id.replace_by_fee_option);
 
         ImageButton faq = (ImageButton) rootView.findViewById(R.id.faq_button);
 
@@ -143,6 +149,27 @@ public class FragmentTransactionItem extends Fragment {
                 Activity app = getActivity();
                 if (app != null)
                     app.getFragmentManager().popBackStack();
+            }
+        });
+        mReplaceByFee.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View v) {
+                int level = getLevel(item);
+                boolean sent = item.getReceived() - item.getSent() < 0;
+                if (level <= 3 && sent && !item.isReplacedByFee()) {
+                    Activity app = getActivity();
+                    String addr = item.getTo()[0];
+                    String comment = "Replace by fee";
+                    BRSender.getInstance().sendTransactionReplaceByFee(getContext(), new PaymentItem(new String[]{addr}, null, item.getSent() - item.getReceived() - item.getFee(), null, false, comment), item.getTxHash());
+                }
+            }
+        });
+        mTxHash.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (!BRAnimator.isClickAllowed()) return;
+                copyText();
             }
         });
 
@@ -187,6 +214,7 @@ public class FragmentTransactionItem extends Fragment {
 
         mTxHash.setText(item.getTxHashHexReversed());
 
+        mReplaceByFee.setText(getString(R.string.TransactionDetails_replaceByFeeNotAvailable));
 
         int level = getLevel(item);
 
@@ -198,12 +226,24 @@ public class FragmentTransactionItem extends Fragment {
         switch (level) {
             case 0:
                 percentage = getString(R.string.Transaction_awaitingStatus);
+                if (item.isReplacedByFee())
+                    mReplaceByFee.setText(getString(R.string.Transaction_replacedByFee));
+                else if (sent)
+                    mReplaceByFee.setText(getString(R.string.TransactionDetails_replaceByFeeAvailable));
                 break;
             case 1:
                 percentage = getString(R.string.Transaction_awaitingStatus);
+                if (item.isReplacedByFee())
+                    mReplaceByFee.setText(getString(R.string.Transaction_replacedByFee));
+                else if (sent)
+                    mReplaceByFee.setText(getString(R.string.TransactionDetails_replaceByFeeAvailable));
                 break;
             case 2:
                 percentage = getString(R.string.Transaction_awaitingStatus);
+                if (item.isReplacedByFee())
+                    mReplaceByFee.setText(getString(R.string.Transaction_replacedByFee));
+                else if (sent)
+                    mReplaceByFee.setText(getString(R.string.TransactionDetails_replaceByFeeAvailable));
                 break;
             case 3:
                 percentage = getString(R.string.Transaction_firstConfirmation);
@@ -234,7 +274,9 @@ public class FragmentTransactionItem extends Fragment {
             mConfirmationText.setText(String.format("%s", percentage));
         }
 
-        if (!item.isValid())
+        if (item.isReplacedByFee()) {
+            mConfirmationText.setText(getString(R.string.Transaction_replacedByFee));
+        } else if (!item.isValid())
             mConfirmationText.setText(getString(R.string.Transaction_invalid));
 
         mToFromBottom.setText(sent ? getString(R.string.TransactionDirection_to) : getString(R.string.TransactionDirection_address));
@@ -270,6 +312,10 @@ public class FragmentTransactionItem extends Fragment {
                 level = 6;
         }
         return level;
+    }
+
+    private void copyText() {
+        BRClipboardManager.putClipboard(getContext(), mTxHash.getText().toString());
     }
 
     @Override
